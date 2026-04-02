@@ -30,6 +30,16 @@ class FinanceiroController {
     }
   }
 
+  static async estornarContaReceber(req, res, next) {
+    try {
+      const { conta_receber_id, ...dados } = req.body;
+      const conta = await FinanceiroService.estornarContaReceber(conta_receber_id, dados);
+      return res.json(conta);
+    } catch (error) {
+      return next(error);
+    }
+  }
+
   static async fluxoCaixa(req, res, next) {
     try {
       const fluxo = await FinanceiroService.fluxoCaixa();
@@ -43,6 +53,16 @@ class FinanceiroController {
     try {
       const { conta_pagar_id, ...dados } = req.body;
       const conta = await CompraService.baixarContaPagar(conta_pagar_id, dados);
+      return res.json(conta);
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  static async estornarContaPagar(req, res, next) {
+    try {
+      const { conta_pagar_id, ...dados } = req.body;
+      const conta = await CompraService.estornarContaPagar(conta_pagar_id, dados);
       return res.json(conta);
     } catch (error) {
       return next(error);

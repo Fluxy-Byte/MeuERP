@@ -25,6 +25,10 @@ function calcularCustoMedio(estoqueAtual, custoAtual, quantidadeEntrada, custoEn
 }
 
 class CompraService {
+  static adicionarHistorico(textoAtual, novoEvento) {
+    return textoAtual ? `${textoAtual} | ${novoEvento}` : novoEvento;
+  }
+
   static async registrarCompra(dados, usuario) {
     const {
       fornecedor_id,
@@ -276,11 +280,50 @@ class CompraService {
 
       contaPagar.status = "PAGO";
       contaPagar.data_liquidacao = dados.data_liquidacao || new Date();
+      contaPagar.data_estorno = null;
       contaPagar.forma_pagamento = dados.forma_pagamento || contaPagar.forma_pagamento;
-      contaPagar.historico = dados.historico || contaPagar.historico;
+      contaPagar.historico = this.adicionarHistorico(
+        dados.historico || contaPagar.historico,
+        `Pagamento registrado em ${new Date(contaPagar.data_liquidacao).toLocaleDateString("pt-BR")}`
+      );
       await contaPagar.save({ transaction });
 
       await ContabilidadeService.lancarPagamento({
+        contaPagar,
+        transaction
+      });
+
+      return contaPagar;
+    });
+  }
+
+  static async estornarContaPagar(contaPagarId, dados = {}) {
+    if (!contaPagarId) {
+      throw { status: 400, message: "Informe o id da conta a pagar." };
+    }
+
+    return sequelize.transaction(async (transaction) => {
+      const contaPagar = await ContaPagar.findByPk(contaPagarId, { transaction });
+
+      if (!contaPagar) {
+        throw { status: 404, message: "Conta a pagar nao encontrada." };
+      }
+
+      if (contaPagar.status !== "PAGO") {
+        throw { status: 400, message: "Apenas contas pagas podem ser estornadas." };
+      }
+
+      const dataBaixaAnterior = contaPagar.data_liquidacao;
+      contaPagar.status = "PENDENTE";
+      contaPagar.data_liquidacao = null;
+      contaPagar.data_estorno = dados.data_estorno || new Date();
+      contaPagar.historico = this.adicionarHistorico(
+        dados.historico || contaPagar.historico,
+        `Estorno do pagamento de ${dataBaixaAnterior ? new Date(dataBaixaAnterior).toLocaleDateString("pt-BR") : "data nao informada"}`
+      );
+      await contaPagar.save({ transaction });
+
+      await ContabilidadeService.estornarPagamento({
         contaPagar,
         transaction
       });

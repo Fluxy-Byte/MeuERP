@@ -130,6 +130,34 @@ class ContabilidadeService {
       ]
     });
   }
+
+  static async estornarRecebimento({ contaReceber, transaction }) {
+    await this.lancarPartidas({
+      origemTipo: "ESTORNO_RECEBIMENTO",
+      origemId: contaReceber.id,
+      historico: `Estorno do recebimento da conta ${contaReceber.id}`,
+      data: contaReceber.data_estorno || new Date(),
+      transaction,
+      itens: [
+        { codigoConta: "1.1.3.1", natureza: "DEBITO", valor: contaReceber.valor },
+        { codigoConta: "1.1.1.1", natureza: "CREDITO", valor: contaReceber.valor }
+      ]
+    });
+  }
+
+  static async estornarPagamento({ contaPagar, transaction }) {
+    await this.lancarPartidas({
+      origemTipo: "ESTORNO_PAGAMENTO",
+      origemId: contaPagar.id,
+      historico: `Estorno do pagamento da conta ${contaPagar.id}`,
+      data: contaPagar.data_estorno || new Date(),
+      transaction,
+      itens: [
+        { codigoConta: "1.1.1.1", natureza: "DEBITO", valor: contaPagar.valor },
+        { codigoConta: "2.1.2", natureza: "CREDITO", valor: contaPagar.valor }
+      ]
+    });
+  }
 }
 
 module.exports = ContabilidadeService;

@@ -10,6 +10,46 @@ const {
 const ContabilidadeService = require("./contabilidadeService");
 
 class VendaService {
+  static async obterComprovanteVenda(id) {
+    const pedido = await PedidoVenda.findByPk(id, {
+      include: [
+        { model: Cliente, as: "cliente" },
+        {
+          model: ItemVenda,
+          as: "itens",
+          include: [{ model: Produto, as: "produto" }]
+        },
+        { model: ContaReceber, as: "contaReceber" }
+      ]
+    });
+
+    if (!pedido) {
+      throw { status: 404, message: "Pedido de venda nao encontrado." };
+    }
+
+    const itens = pedido.itens.map((item) => ({
+      produto: item.produto?.nome || `Produto ${item.produto_id}`,
+      quantidade: Number(item.quantidade),
+      preco_unitario: Number(item.preco_unitario),
+      subtotal: Number(item.quantidade) * Number(item.preco_unitario)
+    }));
+
+    return {
+      pedido_id: pedido.id,
+      emitido_em: pedido.createdAt,
+      cliente: pedido.cliente,
+      itens,
+      resumo: {
+        subtotal: Number(pedido.subtotal),
+        desconto: Number(pedido.desconto),
+        imposto_percentual: Number(pedido.imposto_percentual),
+        imposto_valor: Number(pedido.imposto_valor),
+        total: Number(pedido.total)
+      },
+      conta_receber: pedido.contaReceber
+    };
+  }
+
   static async registrarVenda(dados, usuario) {
     const { cliente_id, itens, desconto = 0 } = dados;
 

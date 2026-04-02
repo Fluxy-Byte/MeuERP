@@ -27,6 +27,10 @@ const ContaReceber = sequelize.define("ContaReceber", {
     type: DataTypes.DATE,
     allowNull: true
   },
+  data_estorno: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
   forma_pagamento: {
     type: DataTypes.STRING,
     allowNull: true
